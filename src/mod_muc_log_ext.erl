@@ -207,41 +207,41 @@ code_change(_OldVsn, State, _Extra) ->
 %%--------------------------------------------------------------------
 %%% Internal functions
 %%--------------------------------------------------------------------
-add_to_log2(text, {Nick, Packet}, Room, Opts, State) ->
+add_to_log2(text, {JID, Nick, Packet}, Room, Opts, State) ->
     case {xml:get_subtag(Packet, "subject"), xml:get_subtag(Packet, "body")} of
 	{false, false} ->
 	    ok;
 	{false, SubEl} ->
 	    Message = {body, xml:get_tag_cdata(SubEl)},
-	    add_message_to_log(Nick, Message, Room, Opts, State);
+	    add_message_to_log(JID, Nick, Message, Room, Opts, State);
 	{SubEl, _} ->
 	    Message = {subject, xml:get_tag_cdata(SubEl)},
-	    add_message_to_log(Nick, Message, Room, Opts, State)
+	    add_message_to_log(JID, Nick, Message, Room, Opts, State)
     end;
 
 add_to_log2(roomconfig_change, _Occupants, Room, Opts, State) ->
-    add_message_to_log("", roomconfig_change, Room, Opts, State);
+    add_message_to_log("", "", roomconfig_change, Room, Opts, State);
 
 add_to_log2(roomconfig_change_enabledlogging, Occupants, Room, Opts, State) ->
-    add_message_to_log("", {roomconfig_change, Occupants}, Room, Opts, State);
+    add_message_to_log("", "", {roomconfig_change, Occupants}, Room, Opts, State);
 
 add_to_log2(room_existence, NewStatus, Room, Opts, State) ->
-    add_message_to_log("", {room_existence, NewStatus}, Room, Opts, State);
+    add_message_to_log("", "", {room_existence, NewStatus}, Room, Opts, State);
 
-add_to_log2(nickchange, {OldNick, NewNick}, Room, Opts, State) ->
-    add_message_to_log(NewNick, {nickchange, OldNick}, Room, Opts, State);
+add_to_log2(nickchange, {JID, OldNick, NewNick}, Room, Opts, State) ->
+    add_message_to_log(JID, NewNick, {nickchange, OldNick}, Room, Opts, State);
 
-add_to_log2(join, Nick, Room, Opts, State) ->
-    add_message_to_log(Nick, join, Room, Opts, State);
+add_to_log2(join, {JID, Nick}, Room, Opts, State) ->
+    add_message_to_log(JID, Nick, join, Room, Opts, State);
 
-add_to_log2(leave, {Nick, Reason}, Room, Opts, State) ->
+add_to_log2(leave, {JID, Nick, Reason}, Room, Opts, State) ->
     case Reason of
-	"" -> add_message_to_log(Nick, leave, Room, Opts, State);
-	_ -> add_message_to_log(Nick, {leave, Reason}, Room, Opts, State)
+	"" -> add_message_to_log(JID, Nick, leave, Room, Opts, State);
+	_ -> add_message_to_log(JID, Nick, {leave, Reason}, Room, Opts, State)
     end;
 
-add_to_log2(kickban, {Nick, Reason, Code}, Room, Opts, State) ->
-    add_message_to_log(Nick, {kickban, Code, Reason}, Room, Opts, State).
+add_to_log2(kickban, {JID, Nick, Reason, Code}, Room, Opts, State) ->
+    add_message_to_log(JID, Nick, {kickban, Code, Reason}, Room, Opts, State).
 
 
 %%----------------------------------------------------------------------
@@ -311,7 +311,7 @@ write_last_lines(F, Images_dir, _FileFormat) ->
     fw(F, "  <a href=\"http://jigsaw.w3.org/css-validator/\"><img style=\"border:0;width:88px;height:31px\" src=\"~s/vcss.png\" alt=\"Valid CSS!\"/></a>", [Images_dir]),
     fw(F, "</span></div></body></html>").
 
-add_message_to_log(Nick1, Message, RoomJID, Opts, State) ->
+add_message_to_log(JID, Nick1, Message, RoomJID, Opts, State) ->
     #logstate{out_dir = OutDir,
 	   dir_type = DirType,
 	   dir_name = DirName,
@@ -380,52 +380,52 @@ add_message_to_log(Nick1, Message, RoomJID, Opts, State) ->
 		   io_lib:format("<font class=\"mrcm\">~s</font><br/>", 
 				 [?T("Chatroom configuration modified")]);
 	       join ->  
-		   io_lib:format("<font class=\"mj\">~s ~s</font><br/>", 
-				 [Nick, ?T("joins the room")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"join\"><font class=\"mj\">~s ~s</font></span><br/>",
+				 [jlib:jid_to_string(JID), Nick, ?T("joins the room")]);
 	       leave ->  
-		   io_lib:format("<font class=\"ml\">~s ~s</font><br/>", 
-				 [Nick, ?T("leaves the room")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave\"><font class=\"ml\">~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("leaves the room")]);
 	       {leave, Reason} ->  
-		   io_lib:format("<font class=\"ml\">~s ~s: ~s</font><br/>", 
-				 [Nick, ?T("leaves the room"), htmlize(Reason,NoFollow,FileFormat)]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave\"><font class=\"ml\">~s ~s: ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("leaves the room"), htmlize(Reason,NoFollow,FileFormat)]);
 	       {kickban, "301", ""} ->  
-		   io_lib:format("<font class=\"mb\">~s ~s</font><br/>", 
-				 [Nick, ?T("has been banned")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.301\"><font class=\"mb\">~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been banned")]);
 	       {kickban, "301", Reason} ->  
-		   io_lib:format("<font class=\"mb\">~s ~s: ~s</font><br/>", 
-				 [Nick, ?T("has been banned"), htmlize(Reason,FileFormat)]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.301\"><font class=\"mb\">~s ~s: ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been banned"), htmlize(Reason,FileFormat)]);
 	       {kickban, "307", ""} ->  
-		   io_lib:format("<font class=\"mk\">~s ~s</font><br/>", 
-				 [Nick, ?T("has been kicked")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.307\"><font class=\"mk\">~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been kicked")]);
 	       {kickban, "307", Reason} ->  
-		   io_lib:format("<font class=\"mk\">~s ~s: ~s</font><br/>", 
-				 [Nick, ?T("has been kicked"), htmlize(Reason,FileFormat)]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.307\"><font class=\"mk\">~s ~s: ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been kicked"), htmlize(Reason,FileFormat)]);
 	       {kickban, "321", ""} ->  
-		   io_lib:format("<font class=\"mk\">~s ~s</font><br/>", 
-				 [Nick, ?T("has been kicked because of an affiliation change")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.321\"><font class=\"mk\">~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been kicked because of an affiliation change")]);
 	       {kickban, "322", ""} ->  
-		   io_lib:format("<font class=\"mk\">~s ~s</font><br/>", 
-				 [Nick, ?T("has been kicked because the room has been changed to members-only")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.322\"><font class=\"mk\">~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been kicked because the room has been changed to members-only")]);
 	       {kickban, "332", ""} ->  
-		   io_lib:format("<font class=\"mk\">~s ~s</font><br/>", 
-				 [Nick, ?T("has been kicked because of a system shutdown")]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"leave.kick.332\"><font class=\"mk\">~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T("has been kicked because of a system shutdown")]);
 	       {nickchange, OldNick} ->  
-		   io_lib:format("<font class=\"mnc\">~s ~s ~s</font><br/>", 
-				 [htmlize(OldNick,FileFormat), ?T("is now known as"), Nick]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"nickchange\"><font class=\"mnc\">~s ~s ~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), htmlize(OldNick,FileFormat), ?T("is now known as"), Nick]);
 	       {subject, T} ->  
-		   io_lib:format("<font class=\"msc\">~s~s~s</font><br/>", 
-				 [Nick, ?T(" has set the subject to: "), htmlize(T,NoFollow,FileFormat)]);
+		   io_lib:format("<span data-jid=\"~s\" data-event=\"subject\"><font class=\"msc\">~s~s~s</font></span><br/>", 
+				 [jlib:jid_to_string(JID), Nick, ?T(" has set the subject to: "), htmlize(T,NoFollow,FileFormat)]);
 	       {body, T} ->  
 		   case {regexp:first_match(T, "^/me\s"), Nick} of
 		       {_, ""} ->
-			   io_lib:format("<font class=\"msm\">~s</font><br/>",
-					 [htmlize(T,NoFollow,FileFormat)]);
+			   io_lib:format("<span data-jid=\"~s\" data-event=\"text\"><font class=\"msm\">~s</font></span><br/>",
+					 [jlib:jid_to_string(JID), htmlize(T,NoFollow,FileFormat)]);
 		       {{match, _, _}, _} ->
-			   io_lib:format("<font class=\"mne\">~s ~s</font><br/>", 
-					 [Nick, string:substr(htmlize(T,FileFormat), 5)]);
+			   io_lib:format("<span data-jid=\"~s\" data-event=\"text\"><font class=\"mne\">~s ~s</font></span><br/>", 
+					 [jlib:jid_to_string(JID), Nick, string:substr(htmlize(T,FileFormat), 5)]);
 		       {nomatch, _} ->
-			   io_lib:format("<font class=\"mn\">~s</font> ~s<br/>",
-					 [Nick2, htmlize(T,NoFollow,FileFormat)])
+			   io_lib:format("<span data-jid=\"~s\" data-event=\"text\"><font class=\"mn\">~s</font> ~s</span><br/>",
+					 [jlib:jid_to_string(JID), Nick2, htmlize(T,NoFollow,FileFormat)])
 		   end;
 	       {room_existence, RoomNewExistence} ->
 		   io_lib:format("<font class=\"mrcm\">~s</font><br/>",

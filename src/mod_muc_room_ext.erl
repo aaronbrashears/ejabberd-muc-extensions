@@ -1,5 +1,5 @@
 %%%----------------------------------------------------------------------
-%%% File    : mod_muc_room.erl
+%%% File    : mod_muc_room_ext.erl
 %%% Author  : Alexey Shchepin <alexey@process-one.net>
 %%% Purpose : MUC room stuff
 %%% Created : 19 Mar 2003 by Alexey Shchepin <alexey@process-one.net>
@@ -24,7 +24,7 @@
 %%%
 %%%----------------------------------------------------------------------
 
--module(mod_muc_room).
+-module(mod_muc_room_ext).
 -author('alexey@process-one.net').
 
 -behaviour(gen_fsm).
@@ -48,7 +48,7 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("mod_muc_room.hrl").
+-include("mod_muc_room_ext.hrl").
 
 -define(MAX_USERS_DEFAULT_LIST,
 	[5, 10, 20, 30, 50, 100, 200, 500, 1000, 2000, 5000]).
@@ -69,7 +69,7 @@
 		      ?FSMOPTS)).
 -else.
 -define(SUPERVISOR_START, 
-	Supervisor = gen_mod:get_module_proc(ServerHost, ejabberd_mod_muc_sup),
+	Supervisor = gen_mod:get_module_proc(ServerHost, ejabberd_mod_muc_ext_sup),
 	supervisor:start_child(
 	  Supervisor, [Host, ServerHost, Access, Room, HistorySize, RoomShaper,
 		       Creator, Nick, DefRoomOpts])).
@@ -83,7 +83,7 @@ start(Host, ServerHost, Access, Room, HistorySize, RoomShaper,
     ?SUPERVISOR_START.
 
 start(Host, ServerHost, Access, Room, HistorySize, RoomShaper, Opts) ->
-    Supervisor = gen_mod:get_module_proc(ServerHost, ejabberd_mod_muc_sup),
+    Supervisor = gen_mod:get_module_proc(ServerHost, ejabberd_mod_muc_ext_sup),
     supervisor:start_child(
       Supervisor, [Host, ServerHost, Access, Room, HistorySize, RoomShaper,
 		   Opts]).
@@ -161,7 +161,7 @@ normal_state({route, From, "",
 		    MinMessageInterval =
 			trunc(gen_mod:get_module_opt(
 				StateData#state.server_host,
-				mod_muc, min_message_interval, 0) * 1000000),
+				mod_muc_ext, min_message_interval, 0) * 1000000),
 		    Size = element_size(Packet),
 		    {MessageShaper, MessageShaperInterval} =
 			shaper:update(Activity#activity.message_shaper, Size),
@@ -276,7 +276,7 @@ normal_state({route, From, "",
 						    StateData),
 					    case (NSD#state.config)#config.persistent of
 						true ->
-						    mod_muc:store_room(
+						    mod_muc_ext:store_room(
 						      NSD#state.host,
 						      NSD#state.room,
 						      make_opts(NSD));
@@ -373,7 +373,7 @@ normal_state({route, From, Nick,
     MinPresenceInterval =
 	trunc(gen_mod:get_module_opt(
 		StateData#state.server_host,
-		mod_muc, min_presence_interval, 0) * 1000000),
+		mod_muc_ext, min_presence_interval, 0) * 1000000),
     if
 	(Now >= Activity#activity.presence_time + MinPresenceInterval) and
 	(Activity#activity.presence == undefined) ->
@@ -730,7 +730,7 @@ terminate(Reason, _StateName, StateData) ->
 	       tab_remove_online_user(LJID, StateData)
        end, [], StateData#state.users),
     add_to_log(room_existence, stopped, StateData),
-    mod_muc:room_destroyed(StateData#state.host, StateData#state.room, self(),
+    mod_muc_ext:room_destroyed(StateData#state.host, StateData#state.room, self(),
 			   StateData#state.server_host),
     ok.
 
@@ -766,7 +766,7 @@ process_groupchat_message(From, {xmlelement, "message", Attrs, _Els} = Packet,
 					      FromNick},
 					case (NSD#state.config)#config.persistent of
 					    true ->
-						mod_muc:store_room(
+						mod_muc_ext:store_room(
 						  NSD#state.host,
 						  NSD#state.room,
 						  make_opts(NSD));
@@ -841,7 +841,7 @@ process_groupchat_message(From, {xmlelement, "message", Attrs, _Els} = Packet,
 %% (e.g., a room owner, room admin, or service-level admin)
 %% to send messages to the room even if those users are not occupants.
 %%
-%% Check the mod_muc option access_message_nonparticipant and wether this JID
+%% Check the mod_muc_ext option access_message_nonparticipant and wether this JID
 %% is allowed or denied
 is_user_allowed_message_nonparticipant(JID, StateData) ->
     case get_service_affiliation(JID, StateData) of
@@ -897,7 +897,7 @@ process_presence(From, Nick, {xmlelement, "presence", Attrs, _Els} = Packet,
 			case is_nick_change(From, Nick, StateData) of
 			    true ->
 				case {is_nick_exists(Nick, StateData),
-				      mod_muc:can_use_nick(
+				      mod_muc_ext:can_use_nick(
 					StateData#state.host, From, Nick),
                                       {(StateData#state.config)#config.allow_visitor_nickchange,
                                        is_visitor(From, StateData)}} of
@@ -1290,11 +1290,11 @@ get_max_users(StateData) ->
 
 get_service_max_users(StateData) ->
     gen_mod:get_module_opt(StateData#state.server_host,
-			   mod_muc, max_users, ?MAX_USERS_DEFAULT).
+			   mod_muc_ext, max_users, ?MAX_USERS_DEFAULT).
 
 get_max_users_admin_threshold(StateData) ->
     gen_mod:get_module_opt(StateData#state.server_host,
-			   mod_muc, max_users_admin_threshold, 5).
+			   mod_muc_ext, max_users_admin_threshold, 5).
 
 get_user_activity(JID, StateData) ->
     case treap:lookup(jlib:jid_tolower(JID),
@@ -1304,11 +1304,11 @@ get_user_activity(JID, StateData) ->
 	    MessageShaper =
 		shaper:new(gen_mod:get_module_opt(
 			     StateData#state.server_host,
-			     mod_muc, user_message_shaper, none)),
+			     mod_muc_ext, user_message_shaper, none)),
 	    PresenceShaper =
 		shaper:new(gen_mod:get_module_opt(
 			     StateData#state.server_host,
-			     mod_muc, user_presence_shaper, none)),
+			     mod_muc_ext, user_presence_shaper, none)),
 	    #activity{message_shaper = MessageShaper,
 		      presence_shaper = PresenceShaper}
     end.
@@ -1317,11 +1317,11 @@ store_user_activity(JID, UserActivity, StateData) ->
     MinMessageInterval =
 	gen_mod:get_module_opt(
 	  StateData#state.server_host,
-	  mod_muc, min_message_interval, 0),
+	  mod_muc_ext, min_message_interval, 0),
     MinPresenceInterval =
 	gen_mod:get_module_opt(
 	  StateData#state.server_host,
-	  mod_muc, min_presence_interval, 0),
+	  mod_muc_ext, min_presence_interval, 0),
     Key = jlib:jid_tolower(JID),
     Now = now_to_usec(now()),
     Activity1 = clean_treap(StateData#state.activity, {1, -Now}),
@@ -1527,7 +1527,7 @@ add_new_user(From, Nick, {xmlelement, _, Attrs, Els} = Packet, StateData) ->
     NConferences = tab_count_user(From),
     MaxConferences = gen_mod:get_module_opt(
 		       StateData#state.server_host,
-		       mod_muc, max_user_conferences, 10),
+		       mod_muc_ext, max_user_conferences, 10),
     case {(ServiceAffiliation == owner orelse
 	   MaxUsers == none orelse
 	   ((Affiliation == admin orelse Affiliation == owner) andalso
@@ -1535,7 +1535,7 @@ add_new_user(From, Nick, {xmlelement, _, Attrs, Els} = Packet, StateData) ->
 	   NUsers < MaxUsers) andalso
 	  NConferences < MaxConferences,
 	  is_nick_exists(Nick, StateData),
-	  mod_muc:can_use_nick(StateData#state.host, From, Nick),
+	  mod_muc_ext:can_use_nick(StateData#state.host, From, Nick),
 	  get_default_role(Affiliation, StateData)} of
 	{false, _, _, _} ->
 	    % max user reached and user is not admin or owner
@@ -2296,7 +2296,7 @@ process_admin_items_set(UJID, Items, Lang, StateData) ->
 		  end, StateData, Res),
 	    case (NSD#state.config)#config.persistent of
 		true ->
-		    mod_muc:store_room(NSD#state.host, NSD#state.room,
+		    mod_muc_ext:store_room(NSD#state.host, NSD#state.room,
 				       make_opts(NSD));
 		_ ->
 		    ok
@@ -2764,7 +2764,7 @@ is_allowed_log_change(XEl, StateData, From) ->
 	false ->
 	    true;
 	true ->
-	    (allow == mod_muc_log:check_access_log(
+	    (allow == mod_muc_log_ext:check_access_log(
 	      StateData#state.server_host, From))
     end.
 
@@ -2786,7 +2786,7 @@ is_allowed_room_name_desc_limits(XEl, StateData) ->
 			     jlib:parse_xdata_submit(XEl)) of
 	    {value, {_, [N]}} ->
 		length(N) =< gen_mod:get_module_opt(StateData#state.server_host,
-						    mod_muc, max_room_name,
+						    mod_muc_ext, max_room_name,
 						    infinite);
 	    _ ->
 		true
@@ -2796,7 +2796,7 @@ is_allowed_room_name_desc_limits(XEl, StateData) ->
 			     jlib:parse_xdata_submit(XEl)) of
 	    {value, {_, [D]}} ->
 		length(D) =< gen_mod:get_module_opt(StateData#state.server_host,
-						    mod_muc, max_room_desc,
+						    mod_muc_ext, max_room_desc,
 						    infinite);
 	    _ ->
 		true
@@ -2861,7 +2861,7 @@ is_password_settings_correct(XEl, StateData) ->
 	?XFIELD("text-private", Label, Var, Val)).
 
 get_default_room_maxusers(RoomState) ->
-    DefRoomOpts = gen_mod:get_module_opt(RoomState#state.server_host, mod_muc, default_room_options, []),
+    DefRoomOpts = gen_mod:get_module_opt(RoomState#state.server_host, mod_muc_ext, default_room_options, []),
     RoomState2 = set_opts(DefRoomOpts, RoomState),
     (RoomState2#state.config)#config.max_users.
 
@@ -2980,7 +2980,7 @@ get_config(Lang, StateData, From) ->
 			     Config#config.captcha_protected)];
 	    false -> []
 	end ++
-	case mod_muc_log:check_access_log(
+	case mod_muc_log_ext:check_access_log(
 	       StateData#state.server_host, From) of
 	    allow ->
 		[?BOOLXFIELD(
@@ -3118,9 +3118,9 @@ change_config(Config, StateData) ->
     case {(StateData#state.config)#config.persistent,
 	  Config#config.persistent} of
 	{_, true} ->
-	    mod_muc:store_room(NSD#state.host, NSD#state.room, make_opts(NSD));
+	    mod_muc_ext:store_room(NSD#state.host, NSD#state.room, make_opts(NSD));
 	{true, false} ->
-	    mod_muc:forget_room(NSD#state.host, NSD#state.room);
+	    mod_muc_ext:forget_room(NSD#state.host, NSD#state.room);
 	{false, false} ->
 	    ok
     end,
@@ -3242,7 +3242,7 @@ destroy_room(DEl, StateData) ->
       end, ?DICT:to_list(StateData#state.users)),
     case (StateData#state.config)#config.persistent of
 	true ->
-	    mod_muc:forget_room(StateData#state.host, StateData#state.room);
+	    mod_muc_ext:forget_room(StateData#state.host, StateData#state.room);
 	false ->
 	    ok
 	end,
@@ -3536,13 +3536,13 @@ send_error_only_occupants(Packet, Lang, RoomJID, From) ->
 add_to_log(Type, Data, StateData)
   when Type == roomconfig_change_disabledlogging ->
     %% When logging is disabled, the config change message must be logged:
-    mod_muc_log:add_to_log(
+    mod_muc_log_ext:add_to_log(
       StateData#state.server_host, roomconfig_change, Data,
       StateData#state.jid, make_opts(StateData));
 add_to_log(Type, Data, StateData) ->
     case (StateData#state.config)#config.logging of
 	true ->
-	    mod_muc_log:add_to_log(
+	    mod_muc_log_ext:add_to_log(
 	      StateData#state.server_host, Type, Data,
 	      StateData#state.jid, make_opts(StateData));
 	false ->

@@ -1,5 +1,5 @@
 %%%----------------------------------------------------------------------
-%%% File    : mod_muc_log.erl
+%%% File    : mod_muc_log_ext.erl
 %%% Author  : Badlop@process-one.net
 %%% Purpose : MUC room logging
 %%% Created : 12 Mar 2006 by Alexey Shchepin <alexey@process-one.net>
@@ -24,7 +24,7 @@
 %%%
 %%%----------------------------------------------------------------------
 
--module(mod_muc_log).
+-module(mod_muc_log_ext).
 -author('badlop@process-one.net').
 
 -behaviour(gen_server).
@@ -43,13 +43,13 @@
 
 -include("ejabberd.hrl").
 -include("jlib.hrl").
--include("mod_muc_room.hrl").
+-include("mod_muc_room_ext.hrl").
 
 %% Copied from mod_muc/mod_muc.erl
 -record(muc_online_room, {name_host, pid}).
 
 -define(T(Text), translate:translate(Lang, Text)).
--define(PROCNAME, ejabberd_mod_muc_log).
+-define(PROCNAME, ejabberd_mod_muc_log_ext).
 -record(room, {jid, title, subject, subject_author, config}).
 
 

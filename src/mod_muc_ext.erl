@@ -1,5 +1,5 @@
 %%%----------------------------------------------------------------------
-%%% File    : mod_muc.erl
+%%% File    : mod_muc_ext.erl
 %%% Author  : Alexey Shchepin <alexey@process-one.net>
 %%% Purpose : MUC support (XEP-0045)
 %%% Created : 19 Mar 2003 by Alexey Shchepin <alexey@process-one.net>
@@ -24,7 +24,7 @@
 %%%
 %%%----------------------------------------------------------------------
 
--module(mod_muc).
+-module(mod_muc_ext).
 -author('alexey@process-one.net').
 
 -behaviour(gen_server).
@@ -62,7 +62,7 @@
 		default_room_opts,
 		room_shaper}).
 
--define(PROCNAME, ejabberd_mod_muc).
+-define(PROCNAME, ejabberd_mod_muc_ext).
 
 %%====================================================================
 %% API
@@ -96,8 +96,8 @@ stop(Host) ->
 %% This function is called by a room in three situations:
 %% A) The owner of the room destroyed it
 %% B) The only participant of a temporary room leaves it
-%% C) mod_muc:stop was called, and each room is being terminated
-%%    In this case, the mod_muc process died before the room processes
+%% C) mod_muc_ext:stop was called, and each room is being terminated
+%%    In this case, the mod_muc_ext process died before the room processes
 %%    So the message sending must be catched
 room_destroyed(Host, Room, Pid, ServerHost) ->
     catch gen_mod:get_module_proc(ServerHost, ?PROCNAME) !
@@ -106,7 +106,7 @@ room_destroyed(Host, Room, Pid, ServerHost) ->
 
 %% @doc Create a room.
 %% If Opts = default, the default room options are used.
-%% Else use the passed options as defined in mod_muc_room.
+%% Else use the passed options as defined in mod_muc_room_ext.
 create_room(Host, Name, From, Nick, Opts) ->
     Proc = gen_mod:get_module_proc(Host, ?PROCNAME),
     gen_server:call(Proc, {create, Name, From, Nick, Opts}).
@@ -234,7 +234,7 @@ handle_call({create, Room, From, Nick, Opts},
 		  default -> DefOpts;
 		  _ -> Opts
 	      end,
-    {ok, Pid} = mod_muc_room:start(
+    {ok, Pid} = mod_muc_room_ext:start(
 		  Host, ServerHost, Access,
 		  Room, HistorySize,
 		  RoomShaper, From,
@@ -307,11 +307,11 @@ code_change(_OldVsn, State, _Extra) ->
 %%% Internal functions
 %%--------------------------------------------------------------------
 start_supervisor(Host) ->
-    Proc = gen_mod:get_module_proc(Host, ejabberd_mod_muc_sup),
+    Proc = gen_mod:get_module_proc(Host, ejabberd_mod_muc_ext_sup),
     ChildSpec =
 	{Proc,
 	 {ejabberd_tmp_sup, start_link,
-	  [Proc, mod_muc_room]},
+	  [Proc, mod_muc_room_ext]},
 	 permanent,
 	 infinity,
 	 supervisor,
@@ -319,7 +319,7 @@ start_supervisor(Host) ->
     supervisor:start_child(ejabberd_sup, ChildSpec).
 
 stop_supervisor(Host) ->
-    Proc = gen_mod:get_module_proc(Host, ejabberd_mod_muc_sup),
+    Proc = gen_mod:get_module_proc(Host, ejabberd_mod_muc_ext_sup),
     supervisor:terminate_child(ejabberd_sup, Proc),
     supervisor:delete_child(ejabberd_sup, Proc).
 
@@ -486,7 +486,7 @@ do_route1(Host, ServerHost, Access, HistorySize, RoomShaper,
 						  RoomShaper, From,
 						  Nick, DefRoomOpts),
 				    register_room(Host, Room, Pid),
-				    mod_muc_room:route(Pid, From, Nick, Packet),
+				    mod_muc_room_ext:route(Pid, From, Nick, Packet),
 				    ok;
 				false ->
 				    Lang = xml:get_attr_s("xml:lang", Attrs),
@@ -505,7 +505,7 @@ do_route1(Host, ServerHost, Access, HistorySize, RoomShaper,
 		[R] ->
 		    Pid = R#muc_online_room.pid,
 		    ?DEBUG("MUC: send to process ~p~n", [Pid]),
-		    mod_muc_room:route(Pid, From, Nick, Packet),
+		    mod_muc_room_ext:route(Pid, From, Nick, Packet),
 		    ok
 	    end
     end.
@@ -513,7 +513,7 @@ do_route1(Host, ServerHost, Access, HistorySize, RoomShaper,
 check_user_can_create_room(ServerHost, AccessCreate, From, RoomID) ->
     case acl:match_rule(ServerHost, AccessCreate, From) of
 	allow ->
-	    (length(RoomID) =< gen_mod:get_module_opt(ServerHost, mod_muc,
+	    (length(RoomID) =< gen_mod:get_module_opt(ServerHost, mod_muc_ext,
 						      max_room_id, infinite));
 	_ ->
 	    false
@@ -534,7 +534,7 @@ load_permanent_rooms(Host, ServerHost, Access, HistorySize, RoomShaper) ->
 		      {Room, Host} = R#muc_room.name_host,
 		      case mnesia:dirty_read(muc_online_room, {Room, Host}) of
 			  [] ->
-			      {ok, Pid} = mod_muc_room:start(
+			      {ok, Pid} = mod_muc_room_ext:start(
 					    Host,
 					    ServerHost,
 					    Access,
@@ -555,13 +555,13 @@ start_new_room(Host, ServerHost, Access, Room,
     case mnesia:dirty_read(muc_room, {Room, Host}) of
 	[] ->
 	    ?DEBUG("MUC: open new room '~s'~n", [Room]),
-	    mod_muc_room:start(Host, ServerHost, Access,
+	    mod_muc_room_ext:start(Host, ServerHost, Access,
 			       Room, HistorySize,
 			       RoomShaper, From,
 			       Nick, DefRoomOpts);
 	[#muc_room{opts = Opts}|_] ->
 	    ?DEBUG("MUC: restore room '~s'~n", [Room]),
-	    mod_muc_room:start(Host, ServerHost, Access,
+	    mod_muc_room_ext:start(Host, ServerHost, Access,
 			       Room, HistorySize,
 			       RoomShaper, Opts)
     end.
@@ -800,7 +800,7 @@ process_iq_register_set(Host, From, SubEl, Lang) ->
 
 iq_get_vcard(Lang) ->
     [{xmlelement, "FN", [],
-      [{xmlcdata, "ejabberd/mod_muc"}]},
+      [{xmlcdata, "ejabberd/mod_muc_ext"}]},
      {xmlelement, "URL", [],
       [{xmlcdata, ?EJABBERD_URI}]},
      {xmlelement, "DESC", [],

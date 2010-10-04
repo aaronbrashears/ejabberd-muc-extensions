@@ -1,0 +1,16 @@
+Source: ejabberd-mod-muc-extra
+Section: unknown
+Priority: extra
+Maintainer: Aaron Brashears <aaron@stageit.com>
+Build-Depends: debhelper (>= 7)
+Standards-Version: 3.8.3
+Homepage: http://github.com/aaronbrashears/ejabberd-muc-extensions
+
+Package: ejabberd-mod-muc-extra
+Architecture: all
+Depends: ${misc:Depends}
+Description: Extensions to mod_muc and mod_muc_log to provide more logging
+ Based on the original mod_muc with ejabberd and modular_muc. The
+ erlang sources will pulled from ejabberd 2.1.5 and the build setup was
+ pulled from modular_mud 0.0.1.
+

@@ -1,4 +1,5 @@
-EJABBERD_EBIN=/usr/lib/ejabberd/ebin
+PREFIX=/
+EJABBERD_EBIN=$(PREFIX)usr/lib/ejabberd/ebin
 
 ERLANG=erl
 

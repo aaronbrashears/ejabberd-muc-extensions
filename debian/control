@@ -2,7 +2,7 @@ Source: ejabberd-mod-muc-extra
 Section: net
 Priority: extra
 Maintainer: Aaron Brashears <aaron@stageit.com>
-Build-Depends: debhelper (>= 7)
+Build-Depends: debhelper (>= 7), erlang-base, erlang-asn1, erlang-parsetools, erlang-dev (>= 1:13.b), libexpat1-dev, libssl-dev, zlib1g-dev
 Standards-Version: 3.8.3
 Homepage: http://github.com/aaronbrashears/ejabberd-muc-extensions
 

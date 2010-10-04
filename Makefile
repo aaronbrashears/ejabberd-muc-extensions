@@ -1,5 +1,4 @@
-PREFIX=/
-EJABBERD_EBIN=$(PREFIX)usr/lib/ejabberd/ebin
+EJABBERD_EBIN=$(PREFIX)/usr/lib/ejabberd/ebin
 
 ERLANG=erl
 
@@ -19,6 +18,7 @@ $(OUTDIR)/%.beam: src/%.erl
 	erlc -W $(EFLAGS) -I $(INCLUDE) -o $(OUTDIR) $<
 
 install: build
+	mkdir -p $(EJABBERD_EBIN)
 	cp $(BEAMS) $(EJABBERD_EBIN)
 
 clean:

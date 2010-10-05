@@ -7,7 +7,7 @@ Standards-Version: 3.8.3
 Homepage: http://github.com/aaronbrashears/ejabberd-muc-extensions
 
 Package: ejabberd-mod-muc-extra
-Architecture: all
+Architecture: any
 Depends: ${misc:Depends}, ejabberd
 Description: Extensions to mod_muc and mod_muc_log to provide more logging
  Based on the original mod_muc with ejabberd and modular_muc. The

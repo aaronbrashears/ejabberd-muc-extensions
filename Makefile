@@ -12,9 +12,12 @@ BEAMS = $(addprefix $(OUTDIR)/,$(notdir $(SOURCES:.erl=.beam)))
 
 all: build
 
-build: $(BEAMS)
+build: $(BEAMS) $(OUTDIR)
 
-$(OUTDIR)/%.beam: src/%.erl
+$(OUTDIR):
+	mkdir -p $(OUTDIR)
+
+$(OUTDIR)/%.beam: src/%.erl $(OUTDIR)
 	erlc -W $(EFLAGS) -I $(INCLUDE) -o $(OUTDIR) $<
 
 install: build

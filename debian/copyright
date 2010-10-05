@@ -1,6 +1,6 @@
 This work was packaged for Debian by:
 
-    Aaron <aaron@stageit.com> on Mon, 04 Oct 2010 14:45:20 -0700
+    Aaron Brashears <aaron@stageit.com> on Mon, 04 Oct 2010 14:45:20 -0700
 
 Upstream Author(s):
 
@@ -33,7 +33,7 @@ Public License version 2 can be found in `/usr/share/common-licenses/GPL-2'.
 
 The Debian packaging is:
 
-    Copyright (C) 2010 Aaron <aaron@stageit.com>
+    Copyright (C) 2010 Aaron Brashears <aaron@stageit.com>
 
 you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by

@@ -1,2 +1,5 @@
-erlang_config.rb
 ebin
+debian/ejabberd-mod-muc-extra.debhelper.log
+debian/ejabberd-mod-muc-extra.substvars
+debian/ejabberd-mod-muc-extra/
+debian/files

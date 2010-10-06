@@ -1,6 +1,11 @@
-EJABBERD_EBIN=$(DESTDIR)/usr/lib/ejabberd/ebin
+# *FIX: Write a macro which figures this out.
+# To configure on debian: ./confiugre --prefix /usr
+# To configure on macports: ./configure --prefix /opt/local
 
-ERLANG=erl
+EJABBERD_EBIN=$(DESTDIR)@prefix@/lib/ejabberd/ebin
+ERLC=@ERLC@
+ERLCFLAGS=@ERLCFLAGS@
+
 
 INCLUDE=include
 SOURCES=$(wildcard src/*.erl)
@@ -18,7 +23,7 @@ $(OUTDIR):
 	mkdir -p $(OUTDIR)
 
 $(OUTDIR)/%.beam: src/%.erl $(OUTDIR)
-	erlc -W $(EFLAGS) -I $(INCLUDE) -o $(OUTDIR) $<
+	$(ERLC) $(ERLCFLAGS) -I $(INCLUDE) -o $(OUTDIR) $<
 
 install: build
 	mkdir -p $(EJABBERD_EBIN)
@@ -28,4 +33,4 @@ clean:
 	rm -f $(BEAMS)
 
 emake:
-	$(ERLANG) -make
+	$(ERLC) -make

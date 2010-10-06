@@ -1,5 +1,10 @@
-ebin
+autom4te.cache
+autoscan.log
+config.*
+configure
 debian/ejabberd-mod-muc-extra.debhelper.log
 debian/ejabberd-mod-muc-extra.substvars
 debian/ejabberd-mod-muc-extra/
 debian/files
+ebin
+Makefile

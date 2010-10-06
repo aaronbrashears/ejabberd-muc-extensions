@@ -2,7 +2,7 @@
 # Process this file with autoconf to produce a configure script.
 
 AC_INIT(ejabberd-muc-extra, 0.1.1, engineering@stageit.com)
-AC_PREREQ([2.67])
+AC_PREREQ([2.65])
 
 # Checks for programs.
 AC_ERLANG_NEED_ERLC
